@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->longText('description');
             $table->tinyInteger('status')->default('0')->comment('0=visible,1=hidden');
+            $table->unsignedBigInteger('parent_id')->nullable(); // Add the parent_id column
+            $table->foreign('parent_id')->references('id')->on('categories')->cascadeOnDelete();
             $table->timestamps();
         });
     }

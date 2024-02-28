@@ -17,11 +17,13 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('name');
             $table->longText('description')->nullable();
-            $table->integer('price');
+            $table->float('price');
             $table->integer('quantity');
             $table->tinyInteger('status')->default('0')->comment('1=hidden,0=visible');
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('category_id')->references('id')->on('categories')->cascadeOnDelete();
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+
             $table->timestamps();
         });
     }

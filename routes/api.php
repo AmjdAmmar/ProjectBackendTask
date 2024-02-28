@@ -30,7 +30,8 @@ Route::prefix('v1/')->group(function () {
     // Route::post('product/{id}', [productsController::class,'update']);
     // Route::post('product', [productsController::class,'store']);
     // Route::post('product/{id}/delete', [productsController::class,'destroy']);
-    
+    Route::get('/create-categories', [CategoriesController::class, 'createCategories']);
+
 
 
 
@@ -46,7 +47,7 @@ Route::prefix('v1/')->group(function () {
     // Route::post('User/{id}', [UsersController::class,'update']);
     // Route::post('User', [UsersController::class,'store']);
     // Route::post('User/{id}/delete', [UsersController::class,'destroy']);
-    
 
-    
+
+
 });

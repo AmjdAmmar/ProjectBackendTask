@@ -12,36 +12,59 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Traits\UploadsImages;
 use Illuminate\Database\Eloquent\Builder;
+use DataTables;
+use \Illuminate\Support\Str;
+use App\Models\Product;
 
 class CategoriesController extends Controller
 {
     use UploadsImages;
 
+
     public function index()
     {
+        $categories = Category::with('children.products.user')->get();
 
-        $categories = Category::with('products.user')->get();
-
-        if (!$categories) {
-            return response()->json(['error' => 'Category not found'], 404);
+        if ($categories->isEmpty()) {
+            return response()->json(['error' => 'Categories not found'], 404);
         }
-        $filteredProducts = $categories->flatMap(function ($category) {
-            return $category->products->filter(function ($product) {
-                return stripos($product->user->name, 'a') !== false && $product->price >= 150 ;
-            });
-        });
-        $CategoriesArray = [];
-        foreach ($filteredProducts as $category) {
-            $CategoriesArray[] = [
-                'category' =>  $filteredProducts,
-                'image1' => $category->image,
-                'created_from' => $category->created_from,
+
+        $categoryData = [];
+
+        foreach ($categories as $category) {
+            $categoryInfo = [
+                'id' => $category->id,
+                'name' => $category->name,
+                'description' => $category->description,
+                'status' => $category->status,
+                'created_at' => $category->created_at,
+                'updated_at' => $category->updated_at,
+                'subcategories' => [],
             ];
 
+            foreach ($category->children as $subcategory) {
+                $subcategoryInfo = [
+                    'id' => $subcategory->id,
+                    'name' => $subcategory->name,
+                    'description' => $subcategory->description,
+                    'status' => $subcategory->status,
+                    'created_at' => $subcategory->created_at,
+                    'updated_at' => $subcategory->updated_at,
+                    'products' => $subcategory->products,
+                ];
+
+                $categoryInfo['subcategories'][] = $subcategoryInfo;
+            }
+
+            $categoryData[] = $categoryInfo;
         }
 
-        return response()->json(['filtered_products' => $filteredProducts]);
+        return response()->json(['categories' => $categoryData]);
     }
+
+
+
+
 
     public function create()
     {
@@ -72,31 +95,107 @@ class CategoriesController extends Controller
         ]);
         $mergedImage->save();
 
-        return response()->json(['message' => 'Category created successfully', 'product' => $Category, 'mergedImage' => $mergedImage], Response::HTTP_CREATED);
+        return response()->json(['message' => 'Category created successfully', 'Category' => $Category, 'mergedImage' => $mergedImage], Response::HTTP_CREATED);
     }
+
+    // public function show($id)
+    // {
+    //     $categories = Category::with('products.user')->find($id);
+
+    //     if (!$categories) {
+    //         return response()->json(['error' => 'Category not found'], 404);
+    //     }
+
+    //     $filteredProducts = $categories->products->filter(function ($product) {
+    //         return stripos($product->user->name, 'a') !== false && $product->price >= 150;
+    //     });
+    //     $CategoriesArray = [];
+    //     foreach ($filteredProducts as $category) {
+    //         $CategoriesArray[] = [
+    //             'category' =>  $filteredProducts,
+    //             'image1' => $category->image,
+    //         ];
+    //     }
+
+    //     return response()->json(['filtered_products' => $filteredProducts, 'created_from' => $categories->created_from]);
+    // }
+
+
+    // public function show($id)
+    // {
+    //     $categories = Category::with('children.products', 'children.products.user')->find($id);
+
+    //     if ($categories->isEmpty()) {
+    //         return response()->json(['error' => 'Categories not found'], 404);
+    //     }
+
+    //     $categoryData = [];
+
+    //     foreach ($categories as $category) {
+    //         $categoryInfo = [
+    //             'id' => $category->id,
+    //             'name' => $category->name,
+    //             'description' => $category->description,
+    //             'status' => $category->status,
+    //             'created_at' => $category->created_at,
+    //             'updated_at' => $category->updated_at,
+    //             'subcategories' => [],
+    //         ];
+
+    //         foreach ($category->children as $subcategory) {
+    //             $subcategoryInfo = [
+    //                 'id' => $subcategory->id,
+    //                 'name' => $subcategory->name,
+    //                 'description' => $subcategory->description,
+    //                 'status' => $subcategory->status,
+    //                 'created_at' => $subcategory->created_at,
+    //                 'updated_at' => $subcategory->updated_at,
+    //                 'products' => $subcategory->products,
+    //             ];
+
+    //             $categoryInfo['subcategories'][] = $subcategoryInfo;
+    //         }
+
+    //         $categoryData[] = $categoryInfo;
+    //     }
+
+    //     return response()->json(['categories' => $categoryData]);
+    // }
 
     public function show($id)
-    {
-        $categories = Category::with('products.user')->find($id);
+{
+    $category = Category::with('children.products.user')->find($id);
 
-        if (!$categories) {
-            return response()->json(['error' => 'Category not found'], 404);
-        }
-
-        $filteredProducts = $categories->products->filter(function ($product) {
-            return stripos($product->user->name, 'a') !== false && $product->price >= 150;
-        });
-        $CategoriesArray = [];
-        foreach ($filteredProducts as $category) {
-            $CategoriesArray[] = [
-                'category' =>  $filteredProducts,
-                'image1' => $category->image,
-            ];
-
-        }
-
-        return response()->json(['filtered_products' => $filteredProducts,'created_from' => $categories->created_from]);
+    if (!$category) {
+        return response()->json(['error' => 'Category not found'], 404);
     }
+
+    $categoryData = [
+        'id' => $category->id,
+        'name' => $category->name,
+        'description' => $category->description,
+        'status' => $category->status,
+        'created_at' => $category->created_at,
+        'updated_at' => $category->updated_at,
+        'subcategories' => [],
+    ];
+
+    foreach ($category->children as $subcategory) {
+        $subcategoryInfo = [
+            'id' => $subcategory->id,
+            'name' => $subcategory->name,
+            'description' => $subcategory->description,
+            'status' => $subcategory->status,
+            'created_at' => $subcategory->created_at,
+            'updated_at' => $subcategory->updated_at,
+            'products' => $subcategory->products,
+        ];
+
+        $categoryData['subcategories'][] = $subcategoryInfo;
+    }
+
+    return response()->json(['category' => $categoryData]);
+}
 
     public function edit($id)
     {

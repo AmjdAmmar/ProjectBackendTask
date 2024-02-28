@@ -21,6 +21,7 @@ class productsController extends Controller
     {
 
         $products = Product::where('price', '>=', 150)->get();
+
         $productsArray = [];
         foreach ($products as $product) {
             $productsArray[] = [
@@ -34,7 +35,9 @@ class productsController extends Controller
                 'image1' => $product->image,
                 'created_from' => $product->created_from,
             ];
+
         }
+        // dd($productsArray);
 
         return response()->json(['products' => $productsArray]);
         //   // Loop through each product and access the created_from attribute//     //   echo 'Product: ' . $product->name . ' - Created ' . $product->created_from . '<br>
