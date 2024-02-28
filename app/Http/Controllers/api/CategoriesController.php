@@ -21,46 +21,105 @@ class CategoriesController extends Controller
     use UploadsImages;
 
 
+    // public function index()
+    // {
+    //     $categories = Category::with('children.products.user')->get();
+
+    //     if ($categories->isEmpty()) {
+    //         return response()->json(['error' => 'Categories not found'], 404);
+    //     }
+
+    //     $categoryData = [];
+
+    //     foreach ($categories as $category) {
+    //         $categoryInfo = [
+    //             'id' => $category->id,
+    //             'name' => $category->name,
+    //             'description' => $category->description,
+    //             'status' => $category->status,
+    //             'created_at' => $category->created_at,
+    //             'updated_at' => $category->updated_at,
+    //             'subcategories' => [],
+    //         ];
+
+    //         foreach ($category->children as $subcategory) {
+    //             $subcategoryInfo = [
+    //                 'id' => $subcategory->id,
+    //                 'name' => $subcategory->name,
+    //                 'description' => $subcategory->description,
+    //                 'status' => $subcategory->status,
+    //                 'created_at' => $subcategory->created_at,
+    //                 'updated_at' => $subcategory->updated_at,
+    //                 'products' => $subcategory->products,
+    //                 'subcategories' => [],
+
+    //             ];
+
+
+
+
+
+    //             $categoryInfo['subcategories'][] = $subcategoryInfo;
+
+
+    //         }
+
+    //         $categoryData[] = $categoryInfo;
+    //     }
+
+    //     return response()->json(['categories' => $categoryData]);
+    // }
     public function index()
-    {
-        $categories = Category::with('children.products.user')->get();
+{
+    $categories = Category::with('children.products.user')->whereNull('parent_id')->get();
 
-        if ($categories->isEmpty()) {
-            return response()->json(['error' => 'Categories not found'], 404);
-        }
-
-        $categoryData = [];
-
-        foreach ($categories as $category) {
-            $categoryInfo = [
-                'id' => $category->id,
-                'name' => $category->name,
-                'description' => $category->description,
-                'status' => $category->status,
-                'created_at' => $category->created_at,
-                'updated_at' => $category->updated_at,
-                'subcategories' => [],
-            ];
-
-            foreach ($category->children as $subcategory) {
-                $subcategoryInfo = [
-                    'id' => $subcategory->id,
-                    'name' => $subcategory->name,
-                    'description' => $subcategory->description,
-                    'status' => $subcategory->status,
-                    'created_at' => $subcategory->created_at,
-                    'updated_at' => $subcategory->updated_at,
-                    'products' => $subcategory->products,
-                ];
-
-                $categoryInfo['subcategories'][] = $subcategoryInfo;
-            }
-
-            $categoryData[] = $categoryInfo;
-        }
-
-        return response()->json(['categories' => $categoryData]);
+    if ($categories->isEmpty()) {
+        return response()->json(['error' => 'Categories not found'], 404);
     }
+
+    $categoryData = [];
+
+    foreach ($categories as $category) {
+        $categoryInfo = $this->getCategoryData($category);
+        $categoryData[] = $categoryInfo;
+    }
+
+    return response()->json(['categories' => $categoryData]);
+}
+
+protected function getCategoryData($category)
+{
+    $categoryInfo = [
+        'id' => $category->id,
+        'name' => $category->name,
+        'description' => $category->description,
+        'status' => $category->status,
+        'created_at' => $category->created_at,
+        'updated_at' => $category->updated_at,
+        'subcategories' => [],
+    ];
+
+    foreach ($category->children as $subcategory) {
+        $subcategoryInfo = [
+            'id' => $subcategory->id,
+            'name' => $subcategory->name,
+            'description' => $subcategory->description,
+            'status' => $subcategory->status,
+            'created_at' => $subcategory->created_at,
+            'updated_at' => $subcategory->updated_at,
+            'products' => $subcategory->products,
+        ];
+
+        // Recursively get subcategories
+        $subcategoryInfo['subcategories'] = $this->getCategoryData($subcategory);
+
+        $categoryInfo['subcategories'][] = $subcategoryInfo;
+    }
+
+    return $categoryInfo;
+}
+
+
 
 
 
