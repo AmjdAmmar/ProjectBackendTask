@@ -11,8 +11,7 @@ use App\Http\Requests\CategoryRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Traits\UploadsImages;
-use App\Traits\subcategory;
-;
+use App\Traits\subcategory;;
 
 use Illuminate\Database\Eloquent\Builder;
 use DataTables;
@@ -231,17 +230,17 @@ class CategoriesController extends Controller
     // }
 
     public function show($id)
-{
-    $category = Category::with('children.products.user')->find($id);
+    {
+        $category = Category::with('children.products.user')->find($id);
 
-    if (!$category) {
-        return response()->json(['error' => 'Category not found'], 404);
+        if (!$category) {
+            return response()->json(['error' => 'Category not found'], 404);
+        }
+
+        $categoryData = $this->getCategoryData($category);
+
+        return response()->json(['category' => $categoryData]);
     }
-
-    $categoryData = $this->getCategoryData($category);
-
-    return response()->json(['category' => $categoryData]);
-}
 
 
 
@@ -253,26 +252,43 @@ class CategoriesController extends Controller
     }
 
 
+    // public function update(CategoryRequest $request, $id)
+    // {
+    //     $Category = Category::findOrFail($id);
+
+    //     $Category->name = $request->name;
+    //     $Category->description = $request->description;
+    //     $Category->status = $request->status;
+
+    //     $Category->save();
+
+
+    //     if ($request->hasFile('images')) {
+    //         $images = $request->file('images');
+    //         $this->uploadImages($images, $Category);
+    //     }
+
+
+
+    //     // return response()->json(['message' => 'Category update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImage($image1, $image2, $Category)], Response::HTTP_CREATED);
+    //     return response()->json(['message' => 'Product update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImages($images, $Category)], Response::HTTP_CREATED);
+    // }
+
+
     public function update(CategoryRequest $request, $id)
     {
-        $Category = Category::findOrFail($id);
+        $category = Category::findOrFail($id);
 
-        $Category->name = $request->name;
-        $Category->description = $request->description;
-        $Category->status = $request->status;
+        $category->fill($request->only(['name', 'description', 'status']));
 
-        $Category->save();
-
+        $category->save();
 
         if ($request->hasFile('images')) {
             $images = $request->file('images');
-            $this->uploadImages($images, $Category);
+            $this->uploadImages($images, $category);
         }
 
-
-
-        // return response()->json(['message' => 'Category update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImage($image1, $image2, $Category)], Response::HTTP_CREATED);
-        return response()->json(['message' => 'Product update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImages($images, $Category)], Response::HTTP_CREATED);
+        return response()->json(['message' => 'Category updated successfully', 'category' => $category], Response::HTTP_OK);
     }
 
     public function destroy($id)
