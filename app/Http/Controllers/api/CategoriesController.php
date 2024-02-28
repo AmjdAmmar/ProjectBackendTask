@@ -72,26 +72,71 @@ class CategoriesController extends Controller
 
     //     return response()->json(['categories' => $categoryData]);
     // }
+    // public function index()
+    // {
+    //     $categories = Category::with('children.products.user')->whereNull('parent_id')->get();
+
+    //     if ($categories->isEmpty()) {
+    //         return response()->json(['error' => 'Categories not found'], 404);
+    //     }
+
+    //     $categoryData = [];
+
+    //     foreach ($categories as $category) {
+    //         $categoryInfo = $this->getCategoryData($category);
+    //         $categoryData[] = $categoryInfo;
+    //     }
+
+    //     return response()->json(['categories' => $categoryData]);
+    // }
+
+
     public function index()
-    {
-        $categories = Category::with('children.products.user')->whereNull('parent_id')->get();
+{
+    $categories = Category::with('children.products.user')->whereNull('parent_id')->get();
 
-        if ($categories->isEmpty()) {
-            return response()->json(['error' => 'Categories not found'], 404);
-        }
-
-        $categoryData = [];
-
-        foreach ($categories as $category) {
-            $categoryInfo = $this->getCategoryData($category);
-            $categoryData[] = $categoryInfo;
-        }
-
-        return response()->json(['categories' => $categoryData]);
+    if ($categories->isEmpty()) {
+        return response()->json(['error' => 'Categories not found'], 404);
     }
 
+    $categoryData = [];
 
+    foreach ($categories as $category) {
+        $categoryInfo = $this->getCategoryData($category);
+        $categoryData[] = $categoryInfo;
+    }
 
+    return response()->json(['categories' => $categoryData]);
+}
+
+    // public function index()
+    // {
+    //     $categories = Category::with('children.products.user')->whereNull('parent_id')->get();
+
+    //     if ($categories->isEmpty()) {
+    //         return response()->json(['error' => 'Categories not found'], 404);
+    //     }
+
+    //     $filteredCategories = [];
+
+    //     foreach ($categories as $category) {
+    //         $filteredSubcategories = $this->filterSubcategories($category);
+
+    //         if (!empty($filteredSubcategories)) {
+    //             $filteredCategories[] = [
+    //                 'id' => $category->id,
+    //                 'name' => $category->name,
+    //                 'description' => $category->description,
+    //                 'status' => $category->status,
+    //                 'created_at' => $category->created_at,
+    //                 'updated_at' => $category->updated_at,
+    //                 'subcategories' => $filteredSubcategories,
+    //             ];
+    //         }
+    //     }
+
+    //     return response()->json(['categories' => $filteredCategories]);
+    // }
 
 
 
@@ -102,33 +147,69 @@ class CategoriesController extends Controller
     {
     }
 
+
+
+    // public function store(CategoryRequest $request)
+    // {
+    //     // Validate the incoming request
+    //     $validatedData = $request->validated();
+
+    //     // Create a new category instance
+    //     $category = new Category([
+    //         'name' => $validatedData['name'],
+    //         'description' => $validatedData['description'],
+    //         'status' => $validatedData['status'],
+    //     ]);
+
+    //     // Save the category
+    //     $category->save();
+
+    //     // Upload images if they exist in the request
+    //     if ($request->hasFile('images')) {
+    //         $images = $request->file('images');
+    //         $this->uploadImages($images, $category);
+    //     }
+
+    //     // Return a JSON response with success message and the created category
+    //     return response()->json(['message' => 'Category created successfully', 'category' => $category], Response::HTTP_CREATED);
+    // }
+
+
+
+
     public function store(CategoryRequest $request)
     {
         $validatedData = $request->validated();
 
-        $existingCategory = Category::where('name', $validatedData['name'])
-            ->where('description', $validatedData['description'])
-            ->where('status', $validatedData['status'])
-            ->first();
+        $existingCategory = Category::where('name', $validatedData['name'])->first();
 
         if ($existingCategory) {
             return response()->json(['message' => 'Category already exists'], Response::HTTP_CONFLICT);
         }
 
-        $Category = new Category($validatedData);
+        $category = new Category($validatedData);
+        $category->save();
 
-        $Category->save();
+        if ($request->hasFile('image1')) {
+            $image = $request->file('image1');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('images'), $imageName);
 
-        $path1 = $request->file('image1')->store('public/images');
-        $mergedImage = new Images([
-            'imageable_type' => Category::class,
-            'imageable_id' => $Category->id,
-            'image1' => $path1,
-        ]);
-        $mergedImage->save();
+            $imageLink = asset('images/' . $imageName);
 
-        return response()->json(['message' => 'Category created successfully', 'Category' => $Category, 'mergedImage' => $mergedImage], Response::HTTP_CREATED);
+            $mergedImage = new Images([
+                'imageable_type' => Category::class,
+                'imageable_id' => $category->id,
+                'image1' => $imageLink,
+            ]);
+            $mergedImage->save();
+        }
+
+        return response()->json(['message' => 'Category created successfully', 'category' => $category, 'image1_link' => $imageLink ?? null], Response::HTTP_CREATED);
     }
+
+
+
 
     // public function show($id)
     // {
@@ -242,6 +323,30 @@ class CategoriesController extends Controller
         return response()->json(['category' => $categoryData]);
     }
 
+    // public function show($id)
+    // {
+    //     $category = Category::with('children.products.user')->find($id);
+
+    //     if (!$category) {
+    //         return response()->json(['error' => 'Category not found'], 404);
+    //     }
+
+    //     $filteredSubcategories = $this->filterSubcategories($category);
+
+    //     $categoryData = [
+    //         'id' => $category->id,
+    //         'name' => $category->name,
+    //         'description' => $category->description,
+    //         'status' => $category->status,
+    //         'created_at' => $category->created_at,
+    //         'updated_at' => $category->updated_at,
+    //         'subcategories' => $filteredSubcategories,
+    //     ];
+
+    //     return response()->json(['category' => $categoryData]);
+    // }
+
+
 
 
 
@@ -275,21 +380,54 @@ class CategoriesController extends Controller
     // }
 
 
+    // public function update(CategoryRequest $request, $id)
+    // {
+    //     $category = Category::findOrFail($id);
+
+    //     $category->fill($request->only(['name', 'description', 'status']));
+
+    //     $category->save();
+
+    //     if ($request->hasFile('images')) {
+    //         $images = $request->file('images');
+    //         $this->uploadImages($images, $category);
+    //     }
+
+    //     return response()->json(['message' => 'Category updated successfully', 'category' => $category], Response::HTTP_OK);
+    // }
+
     public function update(CategoryRequest $request, $id)
-    {
-        $category = Category::findOrFail($id);
+{
+    $validatedData = $request->validated();
 
-        $category->fill($request->only(['name', 'description', 'status']));
+    $category = Category::findOrFail($id);
 
-        $category->save();
+    // Update category attributes
+    $category->update($validatedData);
 
-        if ($request->hasFile('images')) {
-            $images = $request->file('images');
-            $this->uploadImages($images, $category);
+    if ($request->hasFile('image1')) {
+        $image = $request->file('image1');
+        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $image->move(public_path('images'), $imageName);
+
+        $imageLink = asset('images/' . $imageName);
+
+        $existingImage = $category->image()->first();
+
+        if ($existingImage) {
+            $existingImage->update(['image1' => $imageLink]);
+        } else {
+            $mergedImage = new Images([
+                'imageable_type' => Category::class,
+                'imageable_id' => $category->id,
+                'image1' => $imageLink,
+            ]);
+            $mergedImage->save();
         }
-
-        return response()->json(['message' => 'Category updated successfully', 'category' => $category], Response::HTTP_OK);
     }
+
+    return response()->json(['message' => 'Category updated successfully', 'category' => $category, 'image1_link' => $imageLink ?? null], Response::HTTP_OK);
+}
 
     public function destroy($id)
     {

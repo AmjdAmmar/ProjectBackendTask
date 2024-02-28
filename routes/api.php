@@ -27,10 +27,8 @@ Route::prefix('v1/')->group(function () {
     Route::apiResource('User', UsersController::class);
     // Route::get('product', [productsController::class,'index']);
     // Route::get('product/{id}', [productsController::class,'show']);
-    // Route::post('product/{id}', [productsController::class,'update']);
     // Route::post('product', [productsController::class,'store']);
     // Route::post('product/{id}/delete', [productsController::class,'destroy']);
-    Route::get('/create-categories', [CategoriesController::class, 'createCategories']);
 
 
 
