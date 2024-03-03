@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Category;
 
 
-trait SelfRfi
+trait relationships 
 
 {
 
@@ -20,5 +20,5 @@ trait SelfRfi
     {
         return $this->belongsTo(Category::class, 'parent_id', 'id');
     }
-   
+
 }

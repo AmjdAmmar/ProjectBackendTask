@@ -73,7 +73,7 @@ trait subcategory
 
     foreach ($category->children as $subcategory) {
         $filteredProducts = $subcategory->products->filter(function ($product) {
-            return stripos($product->user->name, 'a') !== false && $product->price > 150;
+            return stripos($product->user->name, 'a') !== false;
         });
 
         $subcategoryInfo = [
@@ -83,6 +83,8 @@ trait subcategory
             'status' => $subcategory->status,
             // 'created_at' => $subcategory->created_at,
             // 'updated_at' => $subcategory->updated_at,
+            'image' => $subcategory->image,
+
             'products' => $filteredProducts,
             'subcategories' => [],
         ];

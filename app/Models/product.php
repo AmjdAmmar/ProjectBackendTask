@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Carbon\Carbon;
+use App\Scopes\PriceproductScope;
 
 class Product extends Model
 {
@@ -25,8 +26,6 @@ class Product extends Model
     public function getCreatedFromAttribute()
     {
         return $this->created_at->diffForHumans();
-       
-
     }
 
     public function category()
@@ -39,8 +38,13 @@ class Product extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function image(): MorphMany
+    public function images(): MorphMany
     {
         return $this->morphMany(Images::class, 'imageable');
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new PriceproductScope());
     }
 }

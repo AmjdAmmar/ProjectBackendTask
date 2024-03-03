@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Category;
+
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
-
-class CategoryRequest extends FormRequest
+class Category_updateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,7 +26,7 @@ class CategoryRequest extends FormRequest
         return [
             'name' => 'required|string',
             'description' => 'required|string',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|dimensions:max_width=3840,max_height=2160|max:2700', // Adjust max file size as needed
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|dimensions:max_width=3840,max_height=2160|max:2764', // Adjust max file size as needed
             'status' => 'required|boolean',
         ];
     }

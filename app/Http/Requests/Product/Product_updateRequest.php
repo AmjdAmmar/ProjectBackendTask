@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Product;
+
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
-class productRequest extends FormRequest
+class Product_updateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -31,7 +32,7 @@ class productRequest extends FormRequest
             'price' => 'required|integer',
             'quantity' => 'required|integer',
             'status' => 'required|in:0,1',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|dimensions:max_width=3840,max_height=2160|max:2700', // Adjust max file size as needed
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|dimensions:max_width=3840,max_height=2160|max:2764', // Adjust max file size as needed
 
 
         ];

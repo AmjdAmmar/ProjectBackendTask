@@ -5,7 +5,9 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use App\Models\product;
-use App\Http\Requests\ProductRequest;
+use App\Http\Requests\Product\Product_updateRequest;
+use App\Http\Requests\Product\Product_storeRequest;
+
 use App\Traits\UploadsImages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,91 +16,112 @@ use Carbon\Carbon;
 
 class productsController extends Controller
 {
-    use UploadsImages;
+
 
 
     public function index()
     {
-
-        $products = Product::where('price', '>=', 150)->get();
+        $products = Product::with('user', 'images')->get();
 
         $productsArray = [];
         foreach ($products as $product) {
+            $imageUrls = [];
+
+            $images = $product->images;
+
+            foreach ($images as $image) {
+                $imageUrls[] = asset($image->image);
+            }
+
             $productsArray[] = [
                 'id' => $product->id,
                 'name' => $product->name,
                 'category_id' => $product->category_id,
-                'user_id' => $product->user_id,
+                'user' => [
+                    'id' => $product->user->id,
+                    'name' => $product->user->name,
+                    'email' => $product->user->email,
+                ],
                 'description' => $product->description,
                 'price' => $product->price,
                 'status' => $product->status,
-                'image1' => $product->image,
+                'images' => $imageUrls,
                 'created_from' => $product->created_from,
             ];
-
         }
-        // dd($productsArray);
 
         return response()->json(['products' => $productsArray]);
-        //   // Loop through each product and access the created_from attribute//     //   echo 'Product: ' . $product->name . ' - Created ' . $product->created_from . '<br>
     }
-
-
     public function create()
     {
         //
     }
 
-    public function store(ProductRequest $request)
+    public function store(Product_storeRequest $request)
     {
         $validatedData = $request->validated();
 
-        $existingProduct = Product::where('name', $validatedData['name'])
-            ->where('description', $validatedData['description'])
-            ->where('price', $validatedData['price'])
-            ->where('quantity', $validatedData['quantity'])
-            ->where('status', $validatedData['status'])
-            ->first();
+        $existingProduct = Product::where('name', $validatedData['name'])->first();
 
         if ($existingProduct) {
             return response()->json(['message' => 'Product already exists'], Response::HTTP_CONFLICT);
         }
 
-        $product = new Product($validatedData);
+        $product = Product::create($validatedData);
 
-        $product->save();
+        // dd(  $product);
+        if ($request->hasFile('images')) {
+            $imageLinks = [];
 
-        $path1 = $request->file('image1')->store('public/images');
-        $path2 = $request->file('image2')->store('public/images');
+            foreach ($request->file('images') as $image) {
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('images/product'), $imageName);
+                $imageLink = asset('images/product/' . $imageName);
+                $imageLinks[] = $imageLink;
+                $product->images()->create(['url' => $imageLink]);
+            }
 
-        $mergedImage = new Images([
-            'imageable_type' => Product::class,
-            'imageable_id' => $product->id,
-            'image1' => $path1,
-            'image2' => $path2,
-        ]);
-        $mergedImage->save();
+            return response()->json([
+                'message' => 'Product created successfully',
+                'product' => $product,
+                'image_links' => $imageLinks
+            ], 201);
+        }
 
-        return response()->json(['message' => 'Product created successfully', 'product' => $product, 'mergedImage' => $mergedImage], Response::HTTP_CREATED);
+        return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
     }
+
 
     public function show($id)
     {
-        $products = Product::where('price', '>=', 150)->findOrFail($id);
+        $product = Product::findOrFail($id);
+
+        $imageUrls = [];
+
+        $images = $product->images;
+
+        foreach ($images as $image) {
+            $imageUrls[] = asset($image->image); // Assuming your image model has a 'image' attribute containing the image URL
+        }
+
         $productArray = [
-            'id' => $products->id,
-            'name' => $products->name,
-            'category_id' => $products->category_id,
-            'user_id' => $products->user_id,
-            'description' => $products->description,
-            'price' => $products->price,
-            'status' => $products->status,
-            'image1' => $products->image,
-            'created_from' => $products->created_from,
+            'id' => $product->id,
+            'name' => $product->name,
+            'category_id' => $product->category_id,
+            'user_id' => $product->user_id,
+            'description' => $product->description,
+            'price' => $product->price,
+            'status' => $product->status,
+            'user' => [
+                'id' => $product->user->id,
+                'name' => $product->user->name,
+                'email' => $product->user->email,
+            ],
+            'images' => $imageUrls, // Include the array of image URLs
+            'created_from' => $product->created_from,
         ];
 
-
-        return response()->json(['products' => $productArray]);
+        return response()->json(['product' => $productArray]);
     }
 
     public function edit($id)
@@ -106,34 +129,39 @@ class productsController extends Controller
         //
     }
 
-    public function update(Request $request, $id)
+
+    public function update(Product_updateRequest $request, $id)
     {
+        $validatedData = $request->validated();
+
         $product = Product::findOrFail($id);
 
-        $product->name = $request->name;
-        $product->description = $request->description;
-        $product->category_id = $request->category_id;
-        $product->user_id = $request->user_id;
-        $product->price = $request->price;
-        $product->quantity = $request->quantity;
-        $product->status = $request->status;
+        $product->update($validatedData);
 
-        $product->save();
-        // if ($request->hasFile('image1') && $request->hasFile('image2')) {
-        //     $image1 = $request->file('image1');
-        //     $image2 = $request->file('image2');
-        //     $this->uploadImage($image1, $image2, $product);
-        // }
-        // return response()->json(['message' => 'Product update successfully', 'product' => $product, 'mergedImage' => $this->uploadImage($image1, $image2, $product)], Response::HTTP_CREATED);
+        // $imageLinks = [];
+
         if ($request->hasFile('images')) {
-            $images = $request->file('images');
-            $this->uploadImages($images, $product);
+            $imageLinks = [];
+            foreach ($request->file('images') as $image) {
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('images/product'), $imageName);
+
+                $imageLink = asset('images/product/' . $imageName);
+                $imageLinks[] = $imageLink;
+
+                if ($product->images->count() > 0) {
+                    $product->images()->update(['url' => $imageLink]);
+                } else {
+                    $product->images()->create(['url' => $imageLink]);
+                }
+            }
         }
 
-
-
-        // return response()->json(['message' => 'Category update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImage($image1, $image2, $Category)], Response::HTTP_CREATED);
-        return response()->json(['message' => 'Product update successfully', 'product' => $product, 'mergedImage' => $this->uploadImages($images, $product)], Response::HTTP_CREATED);
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product,
+            'image_links' => $imageLinks
+        ], Response::HTTP_OK);
     }
 
     public function destroy($id)

@@ -5,7 +5,8 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Requests\UserRequest;
+use App\Http\Requests\User\User_storeRequest;
+use App\Http\Requests\User\User_updateRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Traits\UploadsImages;
@@ -14,96 +15,85 @@ use Illuminate\Support\Facades\Hash;
 
 class UsersController extends Controller
 {
-    use UploadsImages;
-
 
     public function index()
-    {
-        $users = User::with('product')->get();
+{
+    $users = User::with('product', 'image')->get();
+    $usersData = [];
 
-        if (!$users) {
-            return response()->json(['error' => 'user not found'], 404);
-        }
-        $filteredUsers = $users->flatMap(function ($user) {
-            return $user->product->filter(function ($product) {
-                return $product->price >= 150;
-            });
-        });
-        $UsersArray = [];
-        foreach ($filteredUsers as $user) {
-            $UsersArray[] = [
-                'Users' =>  $user,
-                'image1' => $user->image,
-                'created_from' => $user->created_from,
-            ];
-        }
+    foreach ($users as $user) {
+        $images = $user->image;
 
-        return response()->json(['filtered_users' => $UsersArray]);
+        $usersData[] = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'product' => $user->product,
+            'images' => $images,
+            'created_from' => $user->created_from,
+        ];
     }
+
+    return response()->json(['users' => $usersData]);
+}
+
+
+
 
     public function create()
     {
         //
     }
 
-    public function store(UserRequest $request)
+    public function store(User_storeRequest $request)
     {
         $validatedData = $request->validated();
 
-        $existingCategory = User::where('name', $validatedData['name'])
-            ->where('email', $validatedData['email'])
-            ->where('status', $validatedData['status'])
-            ->first();
+        // Check if the user already exists
+        $existingUser = User::where('email', $validatedData['email'])->first();
 
-        if ($existingCategory) {
+        if ($existingUser) {
             return response()->json(['message' => 'User already exists'], Response::HTTP_CONFLICT);
         }
-        $validatedData['password'] = Hash::make($validatedData['password']);
-        $path1 = $request->file('image1')->store('public/images');
 
-        $user = new User();
-        $user->name = $validatedData['name'];
-        $user->email = $validatedData['email'];
-        $user->password = bcrypt($validatedData['password']);
-        $user->status = $validatedData['status'];
-        $user->save();
+        if (isset($validatedData['password'])) {
+            $validatedData['password'] = Hash::make($validatedData['password']);
+        }
 
+        $user = User::create($validatedData);
 
-        $mergedImage = new Images([
-            'imageable_type' => User::class,
-            'imageable_id' => $user->id,
-            'image1' => $path1,
-        ]);
-        $mergedImage->save();
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('images/User'), $imageName);
+            $imageLink = asset('images/User/' . $imageName); // Add a slash after 'User'
+            $user->image()->create(['url' => $imageLink]);
 
-        // Return a response indicating success
-        return response()->json(['message' => 'Category created successfully', 'product' => $user, 'mergedImage' => $mergedImage], Response::HTTP_CREATED);
+            return response()->json(['message' => 'User created successfully', 'user' => $user, 'image_link' => $imageLink], Response::HTTP_CREATED);
+        }
+
+        return response()->json(['message' => 'User created successfully', 'user' => $user], Response::HTTP_CREATED);
     }
+
 
     public function show(string $id)
     {
-        $users = User::with('product.category')->findOrFail($id);
+        $user = User::with('product', 'image')->findOrFail($id);
 
-        if (!$users) {
-            return response()->json(['error' => 'user not found'], 404);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
         }
 
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'product' => $user->product,
+            'images' => $user->image,
+            'created_from' => $user->created_from,
+        ];
 
-
-        $filteredusers = $users->product->filter(function ($products) {
-            return $products->price >= 150;
-        });
-
-        $UsersArray = [];
-        foreach ($filteredusers as $user) {
-            $UsersArray[] = [
-                'Users' =>  $user,
-                'image1' => $user->image,
-                'created_from' => $user->created_from,
-            ];
-        }
-
-        return response()->json(['filtered_users' => $filteredusers, 'created_from' => $users->created_from]);
+        return response()->json(['user' => $userData]);
     }
 
     public function edit($id)
@@ -111,35 +101,34 @@ class UsersController extends Controller
         //
     }
 
-    public function update(UserRequest $request, string $id)
+
+
+    public function update(User_updateRequest $request, string $id)
     {
-        $User = User::findOrFail($id);
+        $validatedData = $request->validated();
 
-        $User->name = $request->name;
-        $User->email = $request->email;
-        $User->password = $request->password;
-        $User->status = $request->status;
+        $user = User::findOrFail($id);
 
-        $User->save();
-        // dd('sdsd');
-        // if ($request->hasFile('image1')) {
-        //     $image1 = $request->file('image1');
-        //     $image2 = $request->hasFile('image2') ? $request->file('image2') : null;
-        //     $this->uploadImage($image1, $image2, $User);
-        // }
+        $user->update($validatedData);
 
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('images/category'), $imageName);
 
-        // return response()->json(['message' => 'Product update successfully', 'product' => $User, 'mergedImage' => $this->uploadImage($image1, $image2, $User)], Response::HTTP_CREATED);
-        if ($request->hasFile('images')) {
-            $images = $request->file('images');
-            $this->uploadImages($images, $User);
+            $imageLink = asset('images/category' . $imageName);
+
+            if ($user->image) {
+                $user->image->update(['image' => $imageLink]);
+            } else {
+                $user->image()->create(['image' => $imageLink]);
+            }
         }
 
-
-
-        // return response()->json(['message' => 'Category update successfully', 'product' => $Category, 'mergedImage' => $this->uploadImage($image1, $image2, $Category)], Response::HTTP_CREATED);
-        return response()->json(['message' => 'Product update successfully', 'product' => $User, 'mergedImage' => $this->uploadImages($images, $User)], Response::HTTP_CREATED);
+        return response()->json(['message' => 'Category updated successfully', 'category' => $user, 'image_link' => $imageLink ?? null], Response::HTTP_OK);
     }
+
+
 
     public function destroy(string $id)
     {

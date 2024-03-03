@@ -29,6 +29,7 @@ Route::prefix('v1/')->group(function () {
     // Route::get('product/{id}', [productsController::class,'show']);
     // Route::post('product', [productsController::class,'store']);
     // Route::post('product/{id}/delete', [productsController::class,'destroy']);
+    // Route::post('product/{id}', [productsController::class,'update']);
 
 
 

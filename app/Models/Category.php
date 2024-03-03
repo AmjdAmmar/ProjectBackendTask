@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use PhpParser\Builder\Function_;
-use App\Traits\SelfRfi;
+use App\Traits\relationships; // Add this line to import the relationships trait
 
 class Category extends Model
 {
     use HasFactory;
-    use SelfRfi;
+    use relationships;
+
+
     protected $guarded = ['id'];
     protected $fillable = [
         'name',
@@ -30,32 +31,8 @@ class Category extends Model
         return $this->created_at->diffForHumans();
     }
 
-    // public static function tree()
-    // {
-    //     $allcategories = Category::get();
-    //     $rootcategories = $allcategories->whereNull('parent_id');
 
 
-    //     self::formatTree($rootcategories, $allcategories);
-
-
-
-
-
-    //     return  $rootcategories;
-    // }
-
-    // public static function formatTree($categories, $allcategories){
-    //     foreach ($allcategories as $category) {
-    //         $category->children =    $allcategories->where('parent_id', $category->id)->values();
-
-    //         $category->children =    $allcategories->where('parent_id', $category->id)->values();
-    //         if($category->children->isNotEmpty()){
-    //             self::formatTree($category->children,$allcategories );
-    //         }
-    //     }
-
-    // }
 
 
     public function products(): HasMany

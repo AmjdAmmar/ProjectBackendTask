@@ -8,7 +8,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-
+use App\Models\Product;
+use App\Models\Images;
+use App\Scopes\PriceproductScope;
+use Illuminate\Support\Facades\Hash;
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -17,6 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'status',
+        // 'password',
+
         'created_at',
 
     ];
@@ -31,10 +36,11 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+
     public function getCreatedFromAttribute()
     {
         return $this->created_at->diffForHumans();
-       
+
 
     }
 
@@ -47,4 +53,18 @@ class User extends Authenticatable
     {
         return $this->morphOne(Images::class, 'imageable');
     }
+
+    //    protected static function booted()
+    // {
+    //     parent::addGlobalScope(new PriceproductScope());
+    // }
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+    //     static::creating(function ($user) {
+    //         $user->password = Hash::make($user->password);
+    //     });
+    // }
+
 }
